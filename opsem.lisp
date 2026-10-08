@@ -1,9 +1,81 @@
 ;;; Model
+; Names
+(typedef "name" (uniont symbol string)) 
+(typedef "variable name" "name") 
+(typedef "function name"  "name") 
+(typedef "function block type name" "name") 
+(typedef "program name" "name") 
+(typedef "configuration name"  "name") 
+(typedef "task name" "name") 
+(typedef "resource name" "name") 
+(typedef "resource type name" "name")
+(typedef "program configuration name" "name")
+(typedef "state name" "name")
+(typedef "process name" "name")
+
+; Constants
+(typedef "constant" (uniont "numeric literal" "time literal" "boolean literal" "binary integer" "octal integer" "hexadecimal integer")) 
+(typedef "boolean literal" (enumt"TRUE" "FALSE")) 
+(mot "integer literal" :at "type"  "integer type" :at "value" "int")  
+(mot "real literal" :at "type" "real type" :at "value" real) 
+(typedef "numeric literal" (uniont "integer literal" "real literal")) 
+(mot "time literal" :at "sign" "sign type" :atv "d" real 0 :atv "h" real 0 :atv "m" real 0 :atv "s" real 0 :atv "ms" real 0) 
+(typedef "sign type" (enumt "-")) 
+(mot "binary integer" :at "value" int) 
+(mot "octal integer" :at "value" int) 
+(mot "hexadecimal integer" :at "value" int)
+
+; Types
+(typedef "type" (uniont "elementary type name" "array specification" "function block type name")) 
+(typedef "elementary type name" (uniont "numeric type name" "bit string type name" "time type name" "string type name")) 
+(typedef "numeric type name" (uniont "integer type name" "real type name")) 
+(typedef "integer type name" (uniont "signed integer type name" "unsigned integer type name")) 
+(typedef "signed integer type name" (enumt "SINT" "INT" "DINT" "LINT")) 
+(typedef "unsigned integer type name" (enumt "USINT" "UINT" "UDINT" "ULINT")) 
+(typedef "real type name" (enumt "REAL" "LREAL")) 
+(typedef "bit string type name" (enumt "BOOL" "BYTE" "WORD" "DWORD" "LWORD")) 
+(typedef "time type name" (enumt "TIME")) 
+(typedef "string type name" (enumt "STRING" "WSTRING")) 
+(mot "array specification" :at "interval" (uniont "array interval" "asterisk") :at "type" "elementary type name") 
+(mot "array interval" :at "start" "integer expression" :at "end" "integer expression") 
+(typedef "asterisk" (enumt "*"))
+
+; Expressions
+(mot ".[.]" :at "variable" "variable name" :at "index" "integer expression") 
+(mot "OR" :at "arg1" "boolean expression" :at "arg2" "boolean expression") 
+(mot "XOR" :at "arg1" "boolean expression"  :at "arg2" "boolean expression") 
+(mot "AND" :at "arg1" "boolean expression" :at "arg2" "boolean expression") 
+(mot "=" :at "arg1" "expression" :at "arg2" "expression") 
+(mot "<>" :at "arg1" "expression" :at "arg2" "expression") 
+(mot "<" :at "arg1" "expression" :at "arg2" "expression") 
+(mot ">" :at "arg1" "expression" :at "arg2" "expression") 
+(mot "<=" :at "arg1" "expression" :at "arg2" "expression") 
+(mot ">=" :at "arg1" "expression" "arg2" "expression") 
+(mot "+" :at "arg1" "numeric expression" :at "arg2" "numeric expression" :at "value" int) 
+(mot "-" :at "arg1" "numeric expression" :at "arg2" "numeric expression" :av "value" int) 
+(mot "*" :at "arg1" "numeric expression" :at "arg2" "numeric expression" :av "value" int) 
+(mot "/" :at "arg1" "numeric expression" :at "arg2" "numeric expression" :av "value" int) 
+(mot "MOD" :at "arg1" integer-expression :at "arg2" "integer-expression" :av "value" int ) 
+(mot "**" :at "arg1" "numeric expression"  :at "arg2" "numeric expression") 
+(mot "NOT" :at operand "boolean expression") 
+(mot "-." :at operand "numeric expression" :at "value" int) 
+(mot "process status expression" :at "process" "process name" :at "activity" "activity") 
+(typedef "activity" (enumt "ACTIVE" "INACTIVE" "STOP" "ERROR")) 
+(typedef "boolean expression" (uniont "boolean literal" "variable name" ".[.]" "process status expression" "function call" "OR" "XOR" "AND" "NOT" "=" "<>" "<" ">" "<=" ">=")) 
+(typedef "integer expression" (uniont "integer literal" "variable name" ".[.]"  "function call" "+" "-" "-." "*" "/" "MOD"))  
+(typedef "real expression" (uniont "real literal" "variable name" ".[.]" "function call" "+" "-" "-." "*" "/" "**")) 
+(typedef "numeric expression" (uniont "integer expression" "real expression")) 
+(typedef "other expression" (uniont "constant" "variable name", "function call")) 
+(typedef "expression" (uniont "boolean expression" "numeric expression" "other expression"))  
+(mot "function call" :at "function" "function name" :at "arguments" (listt "parameter assignment")) 
+(mot "parameter assignment" :at "variable" "variable name" :at "assignment" "assignment type" :at "value" "expression") 
+(typedef "assignment type" (enumt ":=" "=>"))
+
 ; Statements
 ;ST statements
 (typedef "ST statement" (uniont "assignment statement" "selection statement" "iteration statement" "function block invocation" "exit statement" "return statement")) 
 (typedef "assignment statement" (uniont "simple variable assignment" "array variable assignment")) 
-(mot "simple variable assignment" :at "variable" "variabole name" :at "value" "expression") 
+(mot "simple variable assignment" :at "variable" "variable name" :at "value" "expression") 
 (mot "array variable assignment" :at "variable" "variable name" :at "index" "integer expression" :at "value" "expression") 
 (typedef "selection statement" (uniont "if statement" "case statement")) 
 (mot "if statement" :at "if thens" (listt "if-then") :at "else" (listt "statement")) 
@@ -30,9 +102,55 @@
 (typedef "set next statement" (enumt "SET NEXT")) 
 (typedef "reset timer statement" (enumt "RESET TIMER")) 
 (mot "timeout statement" :at "timeout" "expression" :at "statements" (listt "statement"))
+
+; State and process declaration
+(mot "state declaration" :at "name" "state name" :at "LOOPED" bool :at "body" (listt "statement") :at "timeout" "timeout statement")
+(mot "process declaration" :at "name" "name" :at "input variables" (listt "input variable declarations") :at "output variables" (listt "output variable declarations") :at "input output variables" (listt "input output variable declarations") :at "variables" (listt "variable declarations") :at "temporary variables" (listt "temporary variable declarations")  :at "states" (listt "state declaration"))
+
+; Program organization units
+(mot "function declaration" :at "name" "function name" :at "return type" "elementary type name" :at "input variables" (listt "input variable declarations") 
+  :at "output variables" "output variable declarations" :at "input output variables" "input output variable declarations" "variables" "variable declarations"
+  :at "body" (listt "statement"))
+(mot "function block declaration" :at "name" "function block type name" :at "input variables" (listt "input variable declarations")
+ :at "output variables" (listt "output variable declarations") :at "input output variables" (listt "input output variable declarations")
+ :at "variables" (listt "variable declarations") :at "temporary variables" (listt "temporary variable declarations")
+ :at "external variables" (listt "external variable declarations") :at "body" (list "process declaration"))
+(mot "program declaration" :at "name" "program name" :at "input variables" (listt "input variable declarations") :at "output variables" (listt "output variable declarations")
+ :at "input output variables" (listt "input output variable declarations") :at "variables" (listt "variable declarations")
+ :at "temporary variables" (listt "temporary variable declarations") :at "external variables" (listt "external variable declarations") :at "body" (list "process declaration"))
+
+; Variable sections
+(mot "input variable declarations" :at "variables" (listt "variable declaration")) 
+(mot "output variable declarations" :at "variables" (listt "variable declaration")) 
+(mot "input output variable declarations" :at "variabless" (listt "variable declaration")) 
+(mot "variable declarations" :at "constant" "qualifier" :at "variables" (listt "variable declaration")) 
+(mot "temporary variable declarations" :at "variables" (listt "variable declaration")) 
+(mot "external variable declarations" :at "constant" "qualifier" :at "variables" (listt "variable declaration")) 
+(mot "global variable declarations" :at "constant" "qualifier" :at "simple variables" (listt "variable declaration") :at "located variables" (listt "global variable declaration")) 
+(typedef "qualifier" (enumt "CONSTANT"))
+
+; Variabe declarations
+(typedef "variable declaration" (uniont "simple variable declaration" "array variable declaration" "FB declaration")) 
+(mot "simple variable declaration" :at "variable list" (listt "variable name" :at "type" "elementary type name" :at "value" "expression")) 
+(mot "array variable declaration" :at "variable list" (listt "variable name") :at "type" "array specification" :at "values" (listt "expression")) 
+(mot "FB declaration" :at "variable list" (listt "variable name") :at "type" "function block type name")
+
+; Configuration elements
+(mot "library" :at "configuration" "configuration declaration" :at "global variabless" (listt "global variable declarations") :at "programs" (listt "program declaration") :at "function blocks" (listt "function block declaration") :at "functions" (listt "function declaration")) 
+(mot "configuration declaration" :at "name" "configuration name" :at "global variables" (listt "global variable declarations") :at "resources" (listt "resource declaration"))  
+(mot "resource declaration" :at "name" "resource name" :at "type" "resource type name" :at "global variables" (listt "global variable declarations") :at "tasks" (listt "task") :at "program configurations" (listt "program configuration")) 
+(mot "task" :at "name" "task name" :at "single" "variable name" :atv "interval" "time literal" (mo "time literal") :at "priority" nat)  
+(mot "program configuration" :at "name" "program configuration name" :at "task" "task name" :at "program" "program name" :at "arguments" (listt "program configuration element")) 
+(typedef "program configuration element" "parameter assignment") 
+(mot "global variable declaration" :at "variable list" (listt "variable name") :at "AT" "direct variable" :at "type" "elementary type name")
+(cot "direct variable" :at "location prefix" "location prefix" :at "size prefix" "size" :at "address" (list nat)) 
+(typedef "location prefix" (enumt "I" "Q" "M")) 
+(typedef "size" (enumt "X" "B" "W" "D" "L"))
+
+
 ; Model of semantic entities
 (typedef "input output variable category" (enumt "VAR_INPUT" "VAR_IN_OUT" "VAR_OUTPUT")) 
-(typedef "poST value" (uniont "boolean literal" nat int float "array" "function block")) 
+(typedef "poST value" (uniont "boolean literal" nat int float "array" "function block snapshot")) 
 (typedef "array" (listt "poST value")) 
 (mot "location" :at "value" "poST value") 
 
@@ -57,32 +175,32 @@
 :at "variable location" (cot :amap "variable name" "location")
 :at "function information" "function information") 
 
-(mot "function block"
+(mot "function block snapshot"
 :at "variable location" (cot :amap "variable name" "location") ; variable values
-:at "processes" (cot :amap "process name" "process") ; list of process instances
-:at "current process" "process" ; current process
+:at "processes" (cot :amap "process name" "process snapshot") ; list of process instances
+:at "current process" "process snapshot" ; current process
 :at "type information" "function block information" ; information about the function block type
-:at "gtime" real ) 
+:at "gtime" nat ) 
 
-(mot "program"
+(mot "program snapshot"
 :at "variable location" (cot :amap "variable name" "location") ; variable values
-:at "processes" (cot :amap "process name" "process") ; list of process instances
-:at "current process" "process" ; current process
-:at "type information" "function block information" ; information about the function block type
-:at "gtime" real) 
+:at "processes" (cot :amap "process name" "process snapshot") ; list of process instances
+:at "current process" "process snapshot" ; current process
+:at "type information" "program information information" ; information about the function block type
+:at "gtime" nat) 
 
 (mot "process information"
 :at "variable type" (cot :amap "variable name" "type")
 :at "state number" (cot :amap "state name" int)
 :at "declaration" "process declaration") 
 
-(mot "process"
+(mot "process snapshot"
 :at "variable location" (cot :amap "variable name" "location")
 :at "process information" "process information"
 :at "current state" int
-:at "timer" real)
+:at "timer" nat)
 
-(typedef "POU instance" (uniont "function snapshot" "function block" "program")) 
+(typedef "POU instance" (uniont "function snapshot" "function block snapshot" "program snapshot")) 
 
 (mot "plant" :at "input variables" (cot :amap "variable name" "type")) 
 
@@ -94,25 +212,27 @@
 :at "program" "program configuration"
 :at "deadline" nat)
 ;;; Operational semantics
+
 ; Agent and environment
 (mot "env")
 (mot "agent"
 :at "variable type" (cot :amap "variable name" "type")
 :at "variable location" (cot :amap "name" "location")
-:at "direct variable type" (cot :amap "direct variable" "type"))
+:at "direct variable type" (cot :amap "direct variable" "type")
 :at "direct variable location" (cot :amap "direct variable" "location")
 :at "function information" (cot :amap "function name" "function information")
 :at "function block information" (cot :amap "function block type name" "function block information")
 :at "program information" (cot :amap "program name" "program information")
 :at "plant" "plant"
 :at "gtime" nat
-:at "program state" (cot :amap "program configuration name" "program")
+:at "program state" (cot :amap "program configuration name" "program snapshot")
 :at "process initialization" bool
 :at "distribution of programs by tasks" (cot :amap "task name" (listt "program configuration"))
 :at "last scheduling time" (cot :amap "task name" real)
 :at "current POU instance" "POU instance"
 :at "queue" (cot :amap "queue position" (listt "program in queue"))
 :at "deadline" nat
+:av "START" 0
 :av "STOP" -2
 :av "ERROR" -1)
 
@@ -126,7 +246,7 @@
 (clear-update-eval-acontext ac :instance val))
 
 
-(aspect "opsem" :context ac :type "simple variable assignment" :instance i ::stage "assign" :agent a :value val :ap i "variable" var :p (get-variable-location var a) l :do
+(aspect "opsem" :context ac :type "simple variable assignment" :instance i :stage "assign" :agent a :value val :ap i "variable" var :p (get-variable-location var a) l :do
 (aset l "value" (iclone val)))
 
 ; array variable assignment
@@ -158,7 +278,7 @@
 :v cond "TRUE"
 :exit (update-push-acontext ac :stage "statement execution" :av "current" 0 :av "length" (length sts))
 :v (< (+ j 1) n) T
-:exit (match :ap i (aseq "tf thens" (+ j 1)) if-then :do
+:exit (match :ap i (aseq "if thens" (+ j 1)) if-then :do
 (update-push-acontext ac :stage "checking condition" :av "current" (+ j 1) :av "statements" (aget if-then "statements"))
 (clear-update-eval-acontext ac :instance (aget if-then "condition")))
 :do (match :ap i "else" else :do
@@ -245,14 +365,14 @@
 :do (update-push-acontext ac :stage "end loop"))
 
 
-(aspect "opsem" :context ac :type "for statement" :instance i :stage "statement execution" :ap i "statements" sts :ap ac "current" j ::ap ac "length" n :match
+(aspect "opsem" :context ac :type "for statement" :instance i :stage "statement execution" :ap i "statements" sts :ap ac "current" j :ap ac "length" n :match
 :v (< j n) :do
 (update-push-acontext ac :av "current" (+ j 1))
 (clear-update-push-acontext ac :instance (nth j sts))
 :exit (update-push-acontext ac :stage "increment control variable"))
 
 
-(aspect "opsem" :context ac ;type "for statement" :instance i :stage "increment control variable" :ap i "control variable" j :ap ac "by" by :do
+(aspect "opsem" :context ac :type "for statement" :instance i :stage "increment control variable" :ap i "control variable" j :ap ac "by" by :do
 (update-push-acontext ac :stage "control variable")
 (clear-update-push-acontext ac :instance (mo "simple variable assignment" :av "variable" j :av "value" (mo "+" :av "arg1" j :av "arg2" by))))
 
@@ -264,7 +384,7 @@
 
 (aspect "opsem" :context ac :type "while statement" :instance i :ap i "condition" cond :do
 (update-push-acontext ac :stage "checking condition")
-(clear-update-push-acontext ac :instance cond))
+(clear-update-eval-acontext ac :instance cond))
 
 
 (aspect "opsem" :context ac :type "while statement" :instance i :stage "checking condition" :value cond :ap i "statements" sts :match
@@ -289,7 +409,7 @@
 (update-push-acontext ac :stage "statement execution" :av "current" 0 :av "length" (length sts)))
 
 
-(aspect "opsem" :context ac :type "while statement" :instance i :stage "statement execution" :ap i "statements" sts :ap ac "current" j :ap ac "length" n :ap i "condition" cond :match
+(aspect "opsem" :context ac :type "repeat statement" :instance i :stage "statement execution" :ap i "statements" sts :ap ac "current" j :ap ac "length" n :ap i "condition" cond :match
 :v (< j n) T :do
 (update-push-acontext ac :av "current" (+ j 1))
 (clear-update-eval-acontext ac :instance (nth j sts))
@@ -397,7 +517,7 @@
 
 ; RESTART
 
-(aspect "opsem" :context ac :type "start process statement" :instance i :agent a :ap a "current POU instance" current-inst :ap current-inst "current process" p :ap p (aseq "process information" "declaration") p-decl :ap a "START" START :do
+(aspect "opsem" :context ac :type "restart statement" :instance i :agent a :ap a "current POU instance" current-inst :ap current-inst "current process" p :ap p (aseq "process information" "declaration") p-decl :ap a "START" START :do
 (update-push-acontext ac :stage "process initialized" :av "current process" p)
 (aset p "current state" START)
 (aset p "timer" (aget current-inst "gtime"))
@@ -405,13 +525,13 @@
 (clear-update-push-acontext ac :attribute "opsem::init" :instance p-decl))
 
 
-(aspect "opsem" :context ac :type "start process statement" :instance i :stage "process initialized" :agent a :ap a "current POU instance" current-inst :do
+(aspect "opsem" :context ac :type "restart statement" :instance i :stage "process initialized" :agent a :ap a "current POU instance" current-inst :do
 (aset a "process initialization" nil))
 
 
 ; STOP PROCESS
 
-(aspect "opsem" :context ac :type "stop process statement" :instance i :agent a :ap a "current POU instance" current-inst :ap i "process" p-name :ap current-innst (aseq "processes" p-name) p :ap a "STOP" STOP :do
+(aspect "opsem" :context ac :type "stop process statement" :instance i :agent a :ap a "current POU instance" current-inst :ap i "process" p-name :ap current-inst (aseq "processes" p-name) p :ap a "STOP" STOP :do
 (aset p "current state" STOP))
 
 ; STOP
@@ -421,7 +541,7 @@
 
 ; ERROR PROCESS
 
-(aspect "opsem" :context ac :type "error process statement" :instance i :agent a :ap a "current POU instance" current-inst :ap i "process" p-name :ap current-innst (aseq "processes" p-name) p :ap a "ERROR" ERROR :do
+(aspect "opsem" :context ac :type "error process statement" :instance i :agent a :ap a "current POU instance" current-inst :ap i "process" p-name :ap current-inst (aseq "processes" p-name) p :ap a "ERROR" ERROR :do
 (aset p "current state" ERROR))
 
 ; ERROR
@@ -432,7 +552,7 @@
 ; Set state statements
 
 (aspect "opsem" :context ac :type "set state statement" :instance i :agent a :ap a "current POU instance" current-inst :ap current-inst "current process" p :ap i "state" s :ap p (aseq "state number" s) sn :do
-(aset p "current-state" sn)
+(aset p "current state" sn)
 (aset p "timer" (aget current-inst "gtime")))
 
 
@@ -448,13 +568,13 @@
 ; Timeout statement
 
 (aspect "opsem" :context ac :type "timeout statement" :instance i :ap i "timeout" t :do
-(update-push-acontext ac :stage "timeout")
+(update-push-acontext ac :stage "timeout condition")
 (clear-update-eval-acontext ac :instance t))
 
 
 (aspect "opsem" :context ac :type "timeout statement" :instance i :stage "timeout condition" :value t :agent a :ap a "current POU instance" current-inst :ap current-inst "current process" p :ap current-inst "gtime" gtime :ap p "timer" timer :ap i "statements" sts :match
-:v (>= (gtime - timer) t) :do
-(update-push-acontext ac :stage "statement execution" :av "current" 0 :av "length" (lengtrh sts)))
+:v (>= (- gtime timer) t) :do
+(update-push-acontext ac :stage "statement execution" :av "current" 0 :av "length" (length sts)))
 
 
 (aspect "opsem" :context ac :type "timeout statement" :instance i :ap i "statements" sts :stage "statement execution" :ap ac "current" j :ap ac "length" n :match
