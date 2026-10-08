@@ -1,0 +1,46 @@
+PROGRAM BaggageCarousel
+  VAR_INPUT
+    startButton: BOOL;
+    pSensor: BOOL;
+    weight: BOOL;
+    stuck: BOOL;
+  END_VAR
+  
+  VAR_OUTPUT
+    engine: BOOL;
+  END_VAR
+  
+  VAR CONSTANT
+    PRESSED: BOOL:= TRUE;
+    DETECTED: BOOL:= TRUE;
+    NOT_DETECTED: BOOL:= FALSE;
+    HIGH: BOOL:= TRUE;
+    LOW: BOOL:= FALSE;
+    TURN_ON: BOOL:= TRUE;
+    TURN_OFF: BOOL:= FALSE;
+    IDLE_TIMEOUT: TIME:= T#30s;
+  END_VAR
+  
+  PROCESS Carousel
+    STATE turnedOff
+      IF startButton = PRESSED AND weight = LOW AND stuck = NOT_DETECTED THEN
+        engine := TURN_ON;
+        SET NEXT;
+      END_IF
+    END_STATE
+    
+    STATE turnedOn
+      IF pSensor = DETECTED THEN
+        RESET TIMER;
+      END_IF
+      IF weight = HIGH OR stuck = DETECTED THEN
+        engine := TURN_OFF;
+        SET STATE turnedOff;
+      END_IF
+      TIMEOUT IDLE_TIMEOUT THEN
+        engine := TURN_OFF;
+        SET STATE turnedOff;
+      END_TIMEOUT
+    END_STATE
+  END_PROCESS
+END_PROGRAM

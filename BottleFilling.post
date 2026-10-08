@@ -1,0 +1,106 @@
+PROGRAM BottleFilling
+  VAR_INPUT
+    iLowLevel: BOOL;
+    iHighLevel: BOOL;
+    iLowTemp: BOOL;
+    iHighTemp: BOOL;
+    iBottleLevel: BOOL;
+    iBottlePosition: BOOL;
+  END_VAR
+  
+  VAR_OUTPUT
+    oFillTank: BOOL;
+    oSteam: BOOL;
+    oFillBottle: BOOL;
+    oConveyor: BOOL;
+  END_VAR
+  
+  VAR CONSTANT
+    TURNED_ON: BOOL:= TRUE;
+    TURNED_OFF: BOOL:= FALSE;
+  END_VAR
+  
+  PROCESS Initialization
+    STATE begin
+      oFillTank := TURNED_ON;
+      IF iHighLevel THEN
+        oFillTank := TURNED_OFF;
+        START PROCESS ForceSterilization;
+        SET NEXT;
+      END_IF
+    END_STATE
+    
+    STATE waitForSterilization
+      IF PROCESS ForceSterilization IN STATE INACTIVE THEN
+        START PROCESS MailLoop;
+        SET NEXT;
+      END_IF
+    END_STATE
+    
+    STATE keepSterilization LOOPED
+      IF NOT iLowTemp THEN
+        oSteam := TURNED_ON;
+      ELSIF iHighTemp THEN
+        oSteam := TURNED_OFF;
+      END_IF
+    END_STATE
+  END_PROCESS
+  
+  PROCESS MailLoop
+    STATE begin
+      START PROCESS NextBottle;
+      SET NEXT;
+    END_STATE
+    
+    STATE waitForNextBottle
+      IF PROCESS NextBottle IN STATE INACTIVE THEN
+        SET NEXT;
+      END_IF
+    END_STATE
+    
+    STATE waitForFilling
+      oFillBottle := TURNED_ON;
+      IF iBottleLevel THEN
+        oFillBottle := TURNED_OFF;
+        IF NOT iLowLevel THEN //no liquid
+          START PROCESS Initialization;
+          STOP;
+        ELSE
+          RESTART;
+        END_IF
+      END_IF
+    END_STATE
+  END_PROCESS
+  
+  PROCESS ForceSterilization
+    STATE heatUp
+      oSteam := TURNED_ON;
+      IF iHighTemp THEN
+        SET NEXT;
+      END_IF
+    END_STATE
+    
+    STATE sterilizationFor1min
+      TIMEOUT T#1m THEN
+        oSteam := TURNED_OFF;
+        STOP;
+      END_TIMEOUT
+    END_STATE
+  END_PROCESS
+  
+  PROCESS NextBottle
+    STATE begin
+      oConveyor := TURNED_ON;
+      IF NOT iBottlePosition THEN // push current bottle
+        SET NEXT;
+      END_IF
+    END_STATE
+    
+    STATE waitBottlePosition
+      IF iBottlePosition THEN
+        oConveyor := TURNED_OFF;
+        STOP;
+      END_IF
+    END_STATE
+  END_PROCESS
+END_PROGRAM

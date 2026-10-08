@@ -1,0 +1,139 @@
+PROGRAM BottleFilling
+  VAR_INPUT
+    iLowLevel : BOOL;
+    iHighLevel : BOOL;
+    iLowTemp : BOOL;
+    iHighTemp : BOOL;
+    iBottleLevel : BOOL;
+    iBottlePosition : BOOL;
+  END_VAR
+  
+  VAR_OUTPUT
+    oFillTank : BOOL;
+    oSteam : BOOL;
+    oFillBottle : BOOL;
+    oConveyor : BOOL;
+  END_VAR
+  
+  PROCESS Initialization
+    STATE begin
+      START PROCESS TankFilling;
+      SET NEXT;
+    END_STATE
+    
+    STATE waitForFilling
+      IF PROCESS TankFilling IN STATE INACTIVE THEN
+        START PROCESS ForcedSterilization;
+        SET NEXT;
+      END_IF
+     END_STATE
+     
+     STATE waitForSterilization
+       IF PROCESS ForcedSterilization IN STATE INACTIVE THEN
+         START PROCESS KeepSterilization;
+         START PROCESS MainLoop;
+         STOP;
+       END_IF
+     END_STATE
+   END_PROCESS
+   
+   PROCESS MainLoop
+     STATE begin
+       START PROCESS NextBottle;
+       SET NEXT;
+     END_STATE
+     
+     STATE waitForNextBottle
+       IF PROCESS NextBottle IN STATE INACTIVE THEN
+         START PROCESS BottleFilling;
+         SET NEXT;
+       END_IF
+     END_STATE
+     
+     STATE waitForFilling
+       IF PROCESS BottleFilling IN STATE INACTIVE THEN
+         IF iLowLevel = FALSE THEN // no liquid
+           STOP PROCESS KeepSterilization;
+           START PROCESS Initialization;
+           STOP;
+         ELSE
+           RESTART;
+         END_IF
+       END_IF
+     END_STATE
+   END_PROCESS
+   
+   PROCESS TankFilling
+     STATE begin
+       IF iHighLevel <> TRUE THEN // is not filled
+         oFillTank := TRUE;
+       END_IF
+       SET NEXT;
+     END_STATE
+     
+     STATE tankFilled
+       IF iHighLevel = TRUE THEN
+         oFillTank := FALSE;
+         STOP;
+       END_IF
+     END_STATE
+   END_PROCESS
+   
+   PROCESS ForcedSterilization
+     STATE heatUp
+       oSteam := TRUE;
+       IF iHighTemp = TRUE THEN
+         SET NEXT;
+       END_IF
+     END_STATE
+     
+     STATE sterilizationFor1min
+       TIMEOUT T#1m THEN
+         oSteam := FALSE;
+         STOP;
+       END_TIMEOUT
+     END_STATE
+   END_PROCESS
+   
+   PROCESS KeepSterilization
+     STATE waitLowTemp
+       IF iLowTemp <> TRUE THEN
+         oSteam := TRUE;
+         SET NEXT;
+       END_IF
+     END_STATE
+     
+     STATE waitHighTemp
+       IF iHighTemp = TRUE THEN
+         oSteam := FALSE;
+         RESTART;
+       END_IF
+     END_STATE
+   END_PROCESS
+   
+   PROCESS BottleFilling
+     STATE begin
+       oFillBottle := TRUE;
+       IF iBottleLevel = TRUE THEN
+         oFillBottle := FALSE;
+         STOP;
+       END_IF
+     END_STATE
+   END_PROCESS
+   
+   PROCESS NextBottle
+     STATE begin
+       oConveyor := TRUE;
+       IF iBottlePosition <> TRUE THEN
+         SET NEXT;
+       END_IF
+     END_STATE
+     
+     STATE waitBottlePosition
+       IF iBottlePosition = TRUE THEN
+         oConveyor := FALSE;
+         STOP;
+       END_IF
+     END_STATE
+   END_PROCESS
+ END_PROGRAM

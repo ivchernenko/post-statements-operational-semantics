@@ -1,0 +1,82 @@
+PROGRAM WaterHeater
+  VAR_INPUT
+    switch: BOOL;
+    maxLevel, minLevel: BOOL;
+    waterPresence: BOOL;
+    maxTemp, minTemp: BOOL;
+  END_VAR
+  
+  VAR_OUTPUT
+    intake: BOOL;
+    heater: BOOL;
+  END_VAR
+  
+  VAR CONSTANT
+    TURNED_ON: BOOL:= TRUE;
+    TURNED_OFF: BOOL:= FALSE;
+  END_VAR
+  
+  PROCESS Controller
+    STATE turnedOff
+      IF switch = TURNED_ON THEN
+        START PROCESS Filling;
+        START PROCESS Heating;
+        SET NEXT;
+      END_IF
+    END_STATE
+      
+    STATE turnedOn
+      IF switch = TURNED_OFF THEN
+        intake := TURNED_OFF;
+        heater := TURNED_OFF;
+        SET STATE turnedOff;
+      END_IF
+    END_STATE
+  END_PROCESS
+  
+  PROCESS Filling
+    STATE turnedOn
+      intake := TURNED_ON;
+      IF maxLevel THEN
+        intake := TURNED_OFF;
+        SET NEXT;
+      END_IF
+    END_STATE
+    
+    STATE turnedOff
+      IF NOT minLevel THEN
+        intake := TURNED_ON;
+        SET STATE turnedOn;
+      END_IF
+    END_STATE
+  END_PROCESS
+  
+  PROCESS Heating
+    STATE noWater
+      IF waterPresence THEN
+        heater := TURNED_ON;
+        SET NEXT;
+      END_IF
+    END_STATE
+    
+    STATE turnedOn
+      IF NOT waterPresence THEN
+        heater := TURNED_OFF;
+        SET STATE noWater;
+      ELSIF maxTemp THEN
+        heater := TURNED_OFF;
+        SET NEXT;
+      END_IF
+    END_STATE
+    
+    STATE turnedOff
+      IF NOT waterPresence THEN
+        SET STATE noWater;
+      ELSIF NOT minTemp THEN
+        heater := TURNED_ON;
+        SET STATE turnedOn;
+      END_IF
+    END_STATE
+  END_PROCESS
+END_PROGRAM
+                

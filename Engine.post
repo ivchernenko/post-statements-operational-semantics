@@ -1,0 +1,124 @@
+PROGRAM Engine
+  VAR_INPUT
+    speed: BOOL;
+    liquidLevel: BOOL;
+    onOffButton: BOOL;
+    Thigh, Tlow: BOOL;
+  END_VAR
+  
+  VAR_OUTPUT
+    ignition: BOOL;
+    sound: BOOL;
+    pump : BOOL;
+    valve : BOOL;
+  END_VAR
+  
+  VAR CONSTANT
+    TURN_ON: BOOL := TRUE;
+    TURN_OFF: BOOL:= FALSE;
+    PRESSED: BOOL:= TRUE;
+    NOT_PRESSED: BOOL:= FALSE;
+    HIGH: BOOL:= TRUE;
+    LOW: BOOL:= FALSE;
+    EMERGENCY_STOP_TIME: TIME:= T#3s;
+    SOUND_TIME: TIME := T#1s;
+    WARN_LIQUID_LACK_TIMEOUT: TIME:= T#1m;
+  END_VAR
+  
+  PROCESS EngineController    
+    STATE turnedOff
+      IF onOffButton = PRESSED THEN
+        IF liquidLevel = HIGH THEN
+          ignition := TURN_ON;
+          pump := TURN_ON;
+          START PROCESS CoolingAgentController;
+          START PROCESS Cooling;
+          STOP PROCESS Sound;
+          SET NEXT;
+        ELSE
+          sound := TURN_ON;
+          START PROCESS Sound;
+          START PROCESS StopEngine;
+        END_IF
+      END_IF
+    END_STATE
+    
+    STATE turningOn
+      IF onOffButton = NOT_PRESSED THEN
+        SET NEXT;
+      END_IF
+    END_STATE
+    
+    STATE turnedOn
+      IF onOffButton = NOT_PRESSED THEN
+        RESET TIMER;
+      ELSIF speed = LOW THEN
+        START PROCESS StopEngine;
+      END_IF
+      TIMEOUT EMERGENCY_STOP_TIME THEN
+        START PROCESS StopEngine;
+      END_TIMEOUT
+    END_STATE
+  END_PROCESS
+  
+  PROCESS CoolingAgentController
+    STATE normal
+      IF liquidLevel = LOW THEN
+        sound := TURN_ON;
+        pump := TURN_OFF;
+        valve := TURN_OFF;
+        STOP PROCESS Cooling;
+        SET NEXT;
+      END_IF
+    END_STATE
+    
+    STATE lack
+      IF liquidLevel = HIGH THEN
+        sound := TURN_OFF;
+        pump := TURN_ON;
+        START PROCESS Cooling;
+        SET STATE normal;
+      END_IF
+      TIMEOUT WARN_LIQUID_LACK_TIMEOUT THEN
+        START PROCESS StopEngine;
+      END_TIMEOUT
+    END_STATE
+  END_PROCESS
+  
+  PROCESS StopEngine
+    STATE stopEngine
+      ignition:= TURN_OFF;
+      sound:= TURN_OFF;
+      STOP PROCESS CoolingAgentController;
+      pump := TURN_OFF;
+      valve := TURN_OFF;
+      STOP PROCESS Cooling;
+      IF onOffButton = NOT_PRESSED THEN
+        START PROCESS EngineController;
+        STOP;
+      ELSE
+        STOP PROCESS EngineController;
+      END_IF
+    END_STATE
+   END_PROCESS
+   
+   PROCESS Cooling
+     STATE ctrl LOOPED
+       IF Thigh THEN
+         valve := TURN_ON;
+       ELSIF NOT Tlow THEN
+         valve := TURN_OFF;
+       END_IF
+     END_STATE
+   END_PROCESS
+   
+   PROCESS Sound
+     STATE sound
+       TIMEOUT SOUND_TIME THEN
+         sound := TURN_OFF;
+         STOP;
+       END_TIMEOUT
+     END_STATE
+   END_PROCESS
+ END_PROGRAM
+      
